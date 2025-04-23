@@ -1,0 +1,16 @@
+{
+  "name": "pix-backend",
+  "version": "1.0.0",
+  "description": "Backend do Pix App com autenticação, geração de QR Code e histórico seguro.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "qrcode": "^1.5.1"
+  }
+}
