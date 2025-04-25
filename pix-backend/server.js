@@ -30,29 +30,6 @@ function authenticateToken(req, res, next) {
 }
 
 // Rotas
-app.post('/api/signup', async (req, res) => {
-  const { nome, email, senha } = req.body;
-
-  const hashedPassword = await bcrypt.hash(senha, 10);
-  users.push({ nome, email, senha: hashedPassword });
-
-  res.json({ success: true, message: 'Usuário cadastrado com sucesso!' });
-});
-
-app.post('/api/login', async (req, res) => {
-  const { email, senha } = req.body;
-
-  const user = users.find(u => u.email === email);
-  if (!user) return res.status(400).json({ message: 'Usuário não encontrado' });
-
-  const valid = await bcrypt.compare(senha, user.senha);
-  if (!valid) return res.status(403).json({ message: 'Senha incorreta' });
-
-  const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '2h' });
-
-  res.json({ success: true, token });
-});
-
 app.post('/api/generateQRCode', authenticateToken, async (req, res) => {
   const { valor, chavePix, descricao } = req.body;
 
@@ -61,21 +38,19 @@ app.post('/api/generateQRCode', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Gerar payload EMV com faz-um-pix
-    const payload = Pix(
+    const pix = Pix(
       chavePix,
-      'Danilo B.', // Nome do recebedor
-      'SALVADOR',  // Cidade
-      Number(valor).toFixed(2), // Valor formatado
+      'Danilo B.',
+      'SALVADOR',
+      Number(valor).toFixed(2),
       descricao || 'Pagamento Pix'
     );
+    const payload = pix.getPayload(); // CORRETO
 
     console.log(`✅ EMV gerado: ${payload}`);
 
-    // Gerar QR Code
     const qrCodeImage = await QRCode.toDataURL(payload);
 
-    // Salvar transação (em memória)
     transactions.push({
       usuario: req.user.email,
       valor,
@@ -84,7 +59,6 @@ app.post('/api/generateQRCode', authenticateToken, async (req, res) => {
       dataGeracao: new Date().toISOString()
     });
 
-    // Retornar resposta
     res.json({
       success: true,
       emv: payload,
@@ -96,6 +70,7 @@ app.post('/api/generateQRCode', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Erro ao gerar QR Code Pix', error: error.message });
   }
 });
+
 
 app.get('/api/transactionHistory', authenticateToken, (req, res) => {
   const historicoUsuario = transactions.filter(t => t.usuario === req.user.email);
